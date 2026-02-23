@@ -2,6 +2,8 @@
 using MqUtil.Data;
 using MqUtil.Mol;
 using MqUtil.Ms.Data;
+using MqUtil.Util;
+
 namespace MqUtil.Ms.Utils{
 	public static class PepUtils{
 		public static (Modification2[][][] dependentMods, bool hasDependentMods) CreateDependentMods(
@@ -178,11 +180,14 @@ namespace MqUtil.Ms.Utils{
 		}
 		public static (string[][] proteinNames, string[][] peptideSequences, byte[][] isMutated)
 			GetProteinAndPeptideLists(Dictionary<string, ISet<string>> protein2Pep, bool splitTaxonomy,
-				TaxonomyRank rank, ProteinSet proteinSet)
+				TaxonomyRank rank, ProteinSet proteinSet, Responder responder)
 		{
+			responder?.Comment("GetProteinAndPeptideLists1");
 			(string[][] proteinNames, string[][] peptideSequences, byte[][] isMutated) =
 				CreateProteinAndPeptideLists(protein2Pep, splitTaxonomy, rank, proteinSet);
+			responder?.Comment("GetProteinAndPeptideLists2");
 			ClusterProteins(ref proteinNames, ref peptideSequences, ref isMutated, splitTaxonomy, rank, proteinSet);
+			responder?.Comment("GetProteinAndPeptideLists3");
 			return (proteinNames, peptideSequences, isMutated);
 		}
 		/// <summary>

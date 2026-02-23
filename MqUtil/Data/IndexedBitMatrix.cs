@@ -1,16 +1,16 @@
 namespace MqUtil.Data{
 	public class IndexedBitMatrix{
-		private readonly HashSet<int>[] data;
+		private readonly SortedSet<int>[] data;
 		public IndexedBitMatrix(int nrows, int ncols){
 			RowCount = nrows;
 			ColumnCount = ncols;
-			data = new HashSet<int>[nrows];
+			data = new SortedSet<int>[nrows];
 		}
 		public int RowCount{ get; }
 		public int ColumnCount{ get; }
 		public void Set(int row, int col, bool val){
 			if (data[row] == null){
-				data[row] = new HashSet<int>();
+				data[row] = new SortedSet<int>();
 			}
 			if (val){
 				data[row].Add(col);
