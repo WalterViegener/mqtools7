@@ -163,18 +163,18 @@ namespace MqUtil.Ms.Utils{
 		}
 		public static (string[][] proteinNames, string[][] peptideSequences, byte[][] isMutated)
 			GetProteinAndPeptideLists(Dictionary<string, Dictionary<string, byte>> protein2Pep, bool splitTaxonomy,
-				TaxonomyRank rank, ProteinSet proteinSet){
+				TaxonomyRank rank, ProteinSet proteinSet, Responder responder){
 			(string[][] proteinNames, string[][] peptideSequences, byte[][] isMutated) =
-				CreateProteinAndPeptideLists(protein2Pep, splitTaxonomy, rank, proteinSet);
+				CreateProteinAndPeptideLists(protein2Pep, splitTaxonomy, rank, proteinSet, responder);
 			ClusterProteins(ref proteinNames, ref peptideSequences, ref isMutated, splitTaxonomy, rank, proteinSet);
 			return (proteinNames, peptideSequences, isMutated);
 		}
 		public static (string[][] proteinNames, string[][] peptideSequences, byte[][] isMutated)
 			GetProteinAndPeptideLists(Dictionary<string, HashSet<string>> protein2Pep, bool splitTaxonomy,
-				TaxonomyRank rank, ProteinSet proteinSet)
+				TaxonomyRank rank, ProteinSet proteinSet, Responder responder)
 		{
 			(string[][] proteinNames, string[][] peptideSequences, byte[][] isMutated) =
-				CreateProteinAndPeptideLists(protein2Pep, splitTaxonomy, rank, proteinSet);
+				CreateProteinAndPeptideLists(protein2Pep, splitTaxonomy, rank, proteinSet, responder);
 			ClusterProteins(ref proteinNames, ref peptideSequences, ref isMutated, splitTaxonomy, rank, proteinSet);
 			return (proteinNames, peptideSequences, isMutated);
 		}
@@ -184,7 +184,7 @@ namespace MqUtil.Ms.Utils{
 		{
 			responder?.Comment("GetProteinAndPeptideLists1");
 			(string[][] proteinNames, string[][] peptideSequences, byte[][] isMutated) =
-				CreateProteinAndPeptideLists(protein2Pep, splitTaxonomy, rank, proteinSet);
+				CreateProteinAndPeptideLists(protein2Pep, splitTaxonomy, rank, proteinSet, responder);
 			responder?.Comment("GetProteinAndPeptideLists2");
 			ClusterProteins(ref proteinNames, ref peptideSequences, ref isMutated, splitTaxonomy, rank, proteinSet);
 			responder?.Comment("GetProteinAndPeptideLists3");
@@ -195,7 +195,7 @@ namespace MqUtil.Ms.Utils{
 		/// </summary>
 		private static (string[][] proteinNames, string[][] peptideSequences, byte[][] isMutated)
 			CreateProteinAndPeptideLists(Dictionary<string, Dictionary<string, byte>> protein2Pep, bool splitTaxonomy,
-				TaxonomyRank rank, ProteinSet proteinSet){
+				TaxonomyRank rank, ProteinSet proteinSet, Responder responder){
 			string[] proteinIds = protein2Pep.Keys.ToArray();
 			string[][] peptideSeq = new string[protein2Pep.Count][];
 			byte[][] isMut = new byte[protein2Pep.Count][];
@@ -207,11 +207,11 @@ namespace MqUtil.Ms.Utils{
 					isMut[i][j] = protein2Pep[proteinIds[i]][peptideSeq[i][j]];
 				}
 			}
-			return CreateProteinAndPeptideLists2(proteinIds, peptideSeq, isMut, splitTaxonomy, rank, proteinSet);
+			return CreateProteinAndPeptideLists2(proteinIds, peptideSeq, isMut, splitTaxonomy, rank, proteinSet, responder);
 		}
 		private static (string[][] proteinNames, string[][] peptideSequences, byte[][] isMutated)
 			CreateProteinAndPeptideLists(Dictionary<string, HashSet<string>> protein2Pep, bool splitTaxonomy,
-				TaxonomyRank rank, ProteinSet proteinSet)
+				TaxonomyRank rank, ProteinSet proteinSet, Responder responder)
 		{
 			string[] proteinIds = protein2Pep.Keys.ToArray();
 			string[][] peptideSeq = new string[protein2Pep.Count][];
@@ -220,11 +220,11 @@ namespace MqUtil.Ms.Utils{
 				peptideSeq[i] = protein2Pep[proteinIds[i]].ToArray();
 				Array.Sort(peptideSeq[i]);
 			}
-			return CreateProteinAndPeptideLists2(proteinIds, peptideSeq, null, splitTaxonomy, rank, proteinSet);
+			return CreateProteinAndPeptideLists2(proteinIds, peptideSeq, null, splitTaxonomy, rank, proteinSet, responder);
 		}
 		private static (string[][] proteinNames, string[][] peptideSequences, byte[][] isMutated)
 			CreateProteinAndPeptideLists(Dictionary<string, ISet<string>> protein2Pep, bool splitTaxonomy,
-				TaxonomyRank rank, ProteinSet proteinSet)
+				TaxonomyRank rank, ProteinSet proteinSet, Responder responder)
 		{
 			string[] proteinIds = protein2Pep.Keys.ToArray();
 			string[][] peptideSeq = new string[protein2Pep.Count][];
@@ -233,13 +233,13 @@ namespace MqUtil.Ms.Utils{
 				peptideSeq[i] = protein2Pep[proteinIds[i]].ToArray();
 				Array.Sort(peptideSeq[i]);
 			}
-			return CreateProteinAndPeptideLists2(proteinIds, peptideSeq, null, splitTaxonomy, rank, proteinSet);
+			return CreateProteinAndPeptideLists2(proteinIds, peptideSeq, null, splitTaxonomy, rank, proteinSet, responder);
 		}
 		private static (string[][] proteinNames, string[][] peptideSequences, byte[][] isMutated)
 			CreateProteinAndPeptideLists2(string[] proteinIds, string[][] peptideSeq, byte[][] isMut,
-				bool splitTaxonomy,
-				TaxonomyRank rank, ProteinSet proteinSet){
+				bool splitTaxonomy, TaxonomyRank rank, ProteinSet proteinSet, Responder responder){
 			string[] taxIds = null;
+			responder?.Comment("CreateProteinAndPeptideLists2-1");
 			if (splitTaxonomy){
 				TaxonomyItems taxonomyItems = TaxonomyItems.GetTaxonomyItems();
 				taxIds = new string[proteinIds.Length];
@@ -248,6 +248,7 @@ namespace MqUtil.Ms.Utils{
 					taxIds[i] = prot != null ? taxonomyItems.GetTaxonomyIdOfRank(prot.TaxonomyId, rank) : "-1";
 				}
 			}
+			responder?.Comment("CreateProteinAndPeptideLists2-2");
 			bool[] taken = new bool[proteinIds.Length];
 			List<int[]> groupInd = new List<int[]>();
 			for (int i = 0; i < taken.Length; i++){
@@ -269,23 +270,27 @@ namespace MqUtil.Ms.Utils{
 				}
 				groupInd.Add(indices.ToArray());
 			}
+			responder?.Comment("CreateProteinAndPeptideLists2-3");
 			int[][] groupIndices = groupInd.ToArray();
 			for (int i = 0; i < groupIndices.Length; i++){
 				string[] names = proteinIds.SubArray(groupIndices[i]);
 				int[] o = names.Order();
 				groupIndices[i] = groupIndices[i].SubArray(o);
 			}
+			responder?.Comment("CreateProteinAndPeptideLists2-4");
 			string[][] proteinNames = new string[groupIndices.Length][];
 			for (int i = 0; i < proteinNames.Length; i++){
 				proteinNames[i] = proteinIds.SubArray(groupIndices[i]);
 				Array.Sort(proteinNames[i]);
 			}
+			responder?.Comment("CreateProteinAndPeptideLists2-5");
 			string[][] peptideSequences = new string[groupIndices.Length][];
 			for (int i = 0; i < proteinNames.Length; i++){
 				peptideSequences[i] = peptideSeq[groupIndices[i][0]];
 				int[] o = peptideSequences[i].Order();
 				peptideSequences[i] = peptideSequences[i].SubArray(o);
 			}
+			responder?.Comment("CreateProteinAndPeptideLists2-6");
 			byte[][] isMutated = null;
 			if (isMut != null){
 				isMutated = new byte[groupIndices.Length][];
@@ -295,6 +300,7 @@ namespace MqUtil.Ms.Utils{
 					isMutated[i] = isMutated[i].SubArray(o);
 				}
 			}
+			responder?.Comment("CreateProteinAndPeptideLists2-7");
 			return (proteinNames, peptideSequences, isMutated);
 		}
 	}
