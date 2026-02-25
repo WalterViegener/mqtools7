@@ -822,8 +822,15 @@ namespace MqApi.Num{
 			}
 			return result;
 		}
-		public static int[] ConsecutiveInts(int to){
+		public static int[] ConsecutiveInts(int to)
+		{
 			return ConsecutiveInts(0, to);
+		}
+		public static void FillConsecutiveInts(int[] a)
+		{
+			for (int i = 0; i < a.Length; i++){
+				a[i] = i;
+			}
 		}
 		public static short[] ConsecutiveShorts(int to){
 			return ConsecutiveShorts(0, to);
