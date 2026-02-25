@@ -249,29 +249,8 @@ namespace MqUtil.Ms.Utils{
 				}
 			}
 			responder?.Comment("CreateProteinAndPeptideLists2-2");
-			bool[] taken = new bool[proteinIds.Length];
-			List<int[]> groupInd = new List<int[]>();
-			for (int i = 0; i < taken.Length; i++){
-				if (taken[i]){
-					continue;
-				}
-				List<int> indices = new List<int>{i};
-				taken[i] = true;
-				for (int j = i + 1; j < taken.Length; j++){
-					if (taken[j]){
-						continue;
-					}
-					if (ArrayUtils.EqualArrays(peptideSeq[i], peptideSeq[j])){
-						if (!splitTaxonomy || taxIds[i].Equals(taxIds[j])){
-							indices.Add(j);
-							taken[j] = true;
-						}
-					}
-				}
-				groupInd.Add(indices.ToArray());
-			}
+			int[][] groupIndices = GetNonredGroupInds2(proteinIds, peptideSeq, splitTaxonomy, taxIds);
 			responder?.Comment("CreateProteinAndPeptideLists2-3");
-			int[][] groupIndices = groupInd.ToArray();
 			for (int i = 0; i < groupIndices.Length; i++){
 				string[] names = proteinIds.SubArray(groupIndices[i]);
 				int[] o = names.Order();
@@ -302,6 +281,106 @@ namespace MqUtil.Ms.Utils{
 			}
 			responder?.Comment("CreateProteinAndPeptideLists2-7");
 			return (proteinNames, peptideSequences, isMutated);
+		}
+		public static int[][] GetNonredGroupIndsOld(string[] proteinIds, string[][] peptideSeq,
+			bool splitTaxonomy, string[] taxIds)
+		{
+			bool[] taken = new bool[proteinIds.Length];
+			List<int[]> groupInd = new List<int[]>();
+			for (int i = 0; i < taken.Length; i++)
+			{
+				if (taken[i])
+				{
+					continue;
+				}
+				List<int> indices = new List<int> { i };
+				taken[i] = true;
+				for (int j = i + 1; j < taken.Length; j++)
+				{
+					if (taken[j])
+					{
+						continue;
+					}
+					if (ArrayUtils.EqualArrays(peptideSeq[i], peptideSeq[j]))
+					{
+						if (!splitTaxonomy || taxIds[i].Equals(taxIds[j]))
+						{
+							indices.Add(j);
+							taken[j] = true;
+						}
+					}
+				}
+				groupInd.Add(indices.ToArray());
+			}
+			return groupInd.ToArray();
+		}
+		public static int[][] GetNonredGroupInds(string[] proteinIds, string[][] peptideSeq,
+			bool splitTaxonomy, string[] taxIds)
+		{
+			string[] pepConcat = new string[peptideSeq.Length];
+			for(int i = 0; i < peptideSeq.Length; i++)
+			{
+				pepConcat[i] = string.Join("|", peptideSeq[i]);
+				if (splitTaxonomy)
+				{
+					pepConcat[i] = taxIds[i] + "|" + pepConcat[i];
+				}
+			}
+			bool[] taken = new bool[proteinIds.Length];
+			List<int[]> groupInd = new List<int[]>();
+			for (int i = 0; i < taken.Length; i++)
+			{
+				if (taken[i])
+				{
+					continue;
+				}
+				List<int> indices = new List<int> { i };
+				taken[i] = true;
+				for (int j = i + 1; j < taken.Length; j++)
+				{
+					if (taken[j])
+					{
+						continue;
+					}
+					if (pepConcat[i].Equals(pepConcat[j]))
+					{
+						indices.Add(j);
+						taken[j] = true;
+					}
+				}
+				groupInd.Add(indices.ToArray());
+			}
+			return groupInd.ToArray();
+		}
+		public static int[][] GetNonredGroupInds2(string[] proteinIds, string[][] peptideSeq,
+			bool splitTaxonomy, string[] taxIds)
+		{
+			string[] pepConcat = new string[peptideSeq.Length];
+			for (int i = 0; i < peptideSeq.Length; i++)
+			{
+				pepConcat[i] = string.Join("|", peptideSeq[i]);
+				if (splitTaxonomy)
+				{
+					pepConcat[i] = taxIds[i] + "|" + pepConcat[i];
+				}
+			}
+			int[] o = pepConcat.Order();
+			List<int[]> groupInds = new List<int[]>();
+			List<int> currentGroup = new List<int> { o[0] };
+			for (int i = 1; i < o.Length; i++)
+			{
+				if (pepConcat[o[i]].Equals(pepConcat[o[i - 1]]))
+				{
+					currentGroup.Add(o[i]);
+				}
+				else
+				{
+					groupInds.Add(currentGroup.ToArray());
+					currentGroup = new List<int> { o[i] };
+				}
+			}
+			groupInds.Add(currentGroup.ToArray());
+			return groupInds.ToArray();
 		}
 	}
 }
