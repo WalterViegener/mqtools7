@@ -1,4 +1,5 @@
 ﻿using MqApi.Num;
+using MqApi.Util;
 using MqUtil.Data;
 using MqUtil.Mol;
 using MqUtil.Ms.Data;
@@ -69,7 +70,7 @@ namespace MqUtil.Ms.Utils{
 			return result.ToArray();
 		}
 		private static void ClusterProteins(ref string[][] proteinIds, ref string[][] pepSeqs, ref byte[][] isMutated,
-			bool splitTaxonomy, TaxonomyRank rank, ProteinSet proteinSet){
+			bool splitTaxonomy, TaxonomyRank rank, ProteinSet proteinSet, int nThreads, Responder responder){
 			int n = proteinIds.Length;
 			string[] taxIds = null;
 			if (splitTaxonomy){
@@ -80,25 +81,35 @@ namespace MqUtil.Ms.Utils{
 					taxIds[i] = prot != null ? taxonomyItems.GetTaxonomyIdOfRank(prot.TaxonomyId, rank) : "-1";
 				}
 			}
+			string[][] ps = new string[pepSeqs.Length][];
 			for (int i = 0; i < n; i++){
 				int[] o = pepSeqs[i].Order();
 				pepSeqs[i] = pepSeqs[i].SubArray(o);
+				ps[i] = pepSeqs[i];
 				if (isMutated != null){
 					isMutated[i] = isMutated[i].SubArray(o);
 				}
 			}
 			IndexedBitMatrix contains = new IndexedBitMatrix(n, n);
-			for (int i = 0; i < n; i++){
-				for (int j = 0; j < n; j++){
-					if (i == j){
+			ThreadDistributor td = new ThreadDistributor(nThreads, n, i =>
+			{
+				string[] p1 = ps[i];
+				for (int j = 0; j < n; j++)
+				{
+					if (i == j)
+					{
 						continue;
 					}
 					contains.Set(i, j,
-						(!splitTaxonomy || taxIds[i].Equals(taxIds[j])) && Contains(pepSeqs[i], pepSeqs[j]));
+						(!splitTaxonomy || taxIds[i].Equals(taxIds[j])) && Contains(p1, ps[j]));
 				}
-			}
+			});
+			responder?.Comment("Clustering proteins...1");
+			td.Start();
 			int count;
-			do{
+			responder?.Comment("Clustering proteins...2");
+			do
+			{
 				count = 0;
 				int start = 0;
 				while (true){
@@ -128,6 +139,7 @@ namespace MqUtil.Ms.Utils{
 					count++;
 				}
 			} while (count > 0);
+			responder?.Comment("Clustering proteins...3");
 			List<int> valids = new List<int>();
 			for (int i = 0; i < n; i++){
 				if (pepSeqs[i].Length > 0){
@@ -139,6 +151,7 @@ namespace MqUtil.Ms.Utils{
 			if (isMutated != null){
 				isMutated = isMutated.SubArray(valids);
 			}
+			responder?.Comment("Clustering proteins...4");
 		}
 		private static int GetContainer(int contained, IndexedBitMatrix contains){
 			int n = contains.RowCount;
@@ -163,30 +176,30 @@ namespace MqUtil.Ms.Utils{
 		}
 		public static (string[][] proteinNames, string[][] peptideSequences, byte[][] isMutated)
 			GetProteinAndPeptideLists(Dictionary<string, Dictionary<string, byte>> protein2Pep, bool splitTaxonomy,
-				TaxonomyRank rank, ProteinSet proteinSet, Responder responder){
+				TaxonomyRank rank, ProteinSet proteinSet, Responder responder, int nThreads){
 			(string[][] proteinNames, string[][] peptideSequences, byte[][] isMutated) =
 				CreateProteinAndPeptideLists(protein2Pep, splitTaxonomy, rank, proteinSet, responder);
-			ClusterProteins(ref proteinNames, ref peptideSequences, ref isMutated, splitTaxonomy, rank, proteinSet);
+			ClusterProteins(ref proteinNames, ref peptideSequences, ref isMutated, splitTaxonomy, rank, proteinSet, nThreads, responder);
 			return (proteinNames, peptideSequences, isMutated);
 		}
 		public static (string[][] proteinNames, string[][] peptideSequences, byte[][] isMutated)
 			GetProteinAndPeptideLists(Dictionary<string, HashSet<string>> protein2Pep, bool splitTaxonomy,
-				TaxonomyRank rank, ProteinSet proteinSet, Responder responder)
+				TaxonomyRank rank, ProteinSet proteinSet, Responder responder, int nThreads)
 		{
 			(string[][] proteinNames, string[][] peptideSequences, byte[][] isMutated) =
 				CreateProteinAndPeptideLists(protein2Pep, splitTaxonomy, rank, proteinSet, responder);
-			ClusterProteins(ref proteinNames, ref peptideSequences, ref isMutated, splitTaxonomy, rank, proteinSet);
+			ClusterProteins(ref proteinNames, ref peptideSequences, ref isMutated, splitTaxonomy, rank, proteinSet, nThreads, responder);
 			return (proteinNames, peptideSequences, isMutated);
 		}
 		public static (string[][] proteinNames, string[][] peptideSequences, byte[][] isMutated)
 			GetProteinAndPeptideLists(Dictionary<string, ISet<string>> protein2Pep, bool splitTaxonomy,
-				TaxonomyRank rank, ProteinSet proteinSet, Responder responder)
+				TaxonomyRank rank, ProteinSet proteinSet, Responder responder, int nThreads)
 		{
 			responder?.Comment("GetProteinAndPeptideLists1");
 			(string[][] proteinNames, string[][] peptideSequences, byte[][] isMutated) =
 				CreateProteinAndPeptideLists(protein2Pep, splitTaxonomy, rank, proteinSet, responder);
 			responder?.Comment("GetProteinAndPeptideLists2");
-			ClusterProteins(ref proteinNames, ref peptideSequences, ref isMutated, splitTaxonomy, rank, proteinSet);
+			ClusterProteins(ref proteinNames, ref peptideSequences, ref isMutated, splitTaxonomy, rank, proteinSet, nThreads, responder);
 			responder?.Comment("GetProteinAndPeptideLists3");
 			return (proteinNames, peptideSequences, isMutated);
 		}
