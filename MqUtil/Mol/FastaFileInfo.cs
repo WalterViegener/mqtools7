@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using MqApi.Util;
+﻿using MqApi.Util;
 using MqUtil.Util;
 namespace MqUtil.Mol{
 	public class FastaFileInfo : IComparable<FastaFileInfo>{
@@ -15,11 +12,11 @@ namespace MqUtil.Mol{
 			new InputParameter<string>("taxonomyId", "taxonomyId"),
 			new InputParameter<string>("koParseRule", "koParseRule"),
 			new InputParameter<string>("cogParseRule", "cogParseRule"),
-			new InputParameter<string>("ecParseRule", "ecParseRule")
+			new InputParameter<string>("ecParseRule", "ecParseRule"),
+			new InputParameter<string>("gff3FilePath", "gff3FilePath")
 		};
 
 		public readonly Dictionary<string, InputParameter> map;
-		public FastaFileInfo() : this("", "", "", "", "", "", "", "", "", ""){ }
 		public string fastaFilePath;
 		public string identifierParseRule;
 		public string descriptionParseRule;
@@ -30,16 +27,18 @@ namespace MqUtil.Mol{
 		public string koParseRule;
 		public string cogParseRule;
 		public string ecParseRule;
+		public string gff3FilePath;
+		public FastaFileInfo() : this("", "", "", "", "", "", "", "", "", "", "") { }
 
 		public FastaFileInfo(string fastaFilePath) : this(fastaFilePath, Tables.GetIdentifierParseRule(fastaFilePath),
 			Tables.GetDescriptionParseRule(fastaFilePath), Tables.GetTaxonomyParseRule(fastaFilePath),
 			Tables.GetTaxonomyId(fastaFilePath), Tables.GetVariationParseRule(fastaFilePath),
 			Tables.GetModificationParseRule(fastaFilePath), Tables.GetKoParseRule(fastaFilePath),
-			Tables.GetCogParseRule(fastaFilePath), Tables.GetEcParseRule(fastaFilePath)){ }
+			Tables.GetCogParseRule(fastaFilePath), Tables.GetEcParseRule(fastaFilePath), ""){ }
 
 		public FastaFileInfo(string fastaFilePath, string identifierParseRule, string descriptionParseRule,
 			string taxonomyParseRule, string taxonomyId, string variationParseRule, string modificationParseRule,
-			string koParseRule = "", string cogParseRule = "", string ecParseRule = ""){
+			string koParseRule = "", string cogParseRule = "", string ecParseRule = "", string gff3FilePath = ""){
 			map = new Dictionary<string, InputParameter>();
 			foreach (InputParameter val in vals){
 				map.Add(val.Name, val);
@@ -54,6 +53,7 @@ namespace MqUtil.Mol{
 			this.koParseRule = koParseRule;
 			this.cogParseRule = cogParseRule;
 			this.ecParseRule = ecParseRule;
+			this.gff3FilePath = gff3FilePath;
 		}
 
 		public FastaFileInfo(string[] s) : this(){
@@ -67,13 +67,15 @@ namespace MqUtil.Mol{
 			if (s.Length > 7) koParseRule = s[7];
 			if (s.Length > 8) cogParseRule = s[8];
 			if (s.Length > 9) ecParseRule = s[9];
+			if (s.Length > 10) gff3FilePath = s[10];
 		}
 
 		public string[] ToStringArray(){
-			return new[]{
+			return
+			[
 				fastaFilePath, identifierParseRule, descriptionParseRule, taxonomyParseRule, taxonomyId,
-				variationParseRule, modificationParseRule, koParseRule, cogParseRule, ecParseRule
-			};
+				variationParseRule, modificationParseRule, koParseRule, cogParseRule, ecParseRule, gff3FilePath
+			];
 		}
 
 		public static string[] GetFastaFilePath(FastaFileInfo[] filePaths){
@@ -152,6 +154,14 @@ namespace MqUtil.Mol{
 			string[] result = new string[filePaths.Length];
 			for (int i = 0; i < result.Length; i++){
 				result[i] = filePaths[i].ecParseRule;
+			}
+			return result;
+		}
+
+		public static string[] GetGff3FilePath(FastaFileInfo[] filePaths){
+			string[] result = new string[filePaths.Length];
+			for (int i = 0; i < result.Length; i++){
+				result[i] = filePaths[i].gff3FilePath;
 			}
 			return result;
 		}
