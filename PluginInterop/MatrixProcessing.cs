@@ -24,7 +24,7 @@ namespace PluginInterop{
 		public virtual bool HasButton => false;
 		public virtual Bitmap2 DisplayImage => null;
 		public virtual string Url => projectUrl;
-		public virtual string Heading => "Embedded script";
+		public virtual string Heading => "Embedded scripting";
 		public virtual string HelpOutput => "";
 		public virtual string[] HelpSupplTables => [];
 		public virtual int NumSupplTables => 0;
